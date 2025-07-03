@@ -13,10 +13,12 @@ import java.util.stream.Collectors;
 @Service
 class DefaultHotelService implements HotelService {
   private final HotelRepository hotelRepository;
+  private final CityRepository cityRepository;
 
   @Autowired
-  DefaultHotelService(HotelRepository hotelRepository) {
+  DefaultHotelService(HotelRepository hotelRepository,CityRepository cityRepository) {
     this.hotelRepository = hotelRepository;
+    this.cityRepository = cityRepository;
   }
 
   @Override
@@ -39,4 +41,35 @@ class DefaultHotelService implements HotelService {
 
     return hotelRepository.save(hotel);
   }
+
+
+ @Override
+  public Optional<Hotel> getHotelById(Long id) {
+    return hotelRepository.findById(id);
+  }
+ @Override
+  public Hotel deleteHotelById(Long id) {
+    Optional<Hotel> hotelOptional = hotelRepository.findById(id);
+    if (hotelOptional.isPresent()) {
+      Hotel deletedHotel = hotelOptional.get();
+      deletedHotel.setDeleted(true);
+      return hotelRepository.save(deletedHotel);
+    }
+    throw new ElementNotFoundException("Unable to delete hotel, invalid hotel id.");
+  }
+
+  @Override
+  public List<Hotel> findHotelsClosestToCityCenter(Long cityId) {
+    Optional<City> maybeCity = cityRepository.findById(cityId);
+    if(!maybeCity.isPresent()) {
+      throw new ElementNotFoundException("Invalid City Id.");
+    }
+    City city = maybeCity.get();
+    return hotelRepository.findHotelsClosestToCityCenter(
+            city.getCityCentreLatitude(),
+            city.getCityCentreLongitude(),
+            cityId, PageRequest.of(0, 3));
+  }
+
+  
 }
